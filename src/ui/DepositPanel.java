@@ -9,8 +9,9 @@ import javax.swing.*;
 import java.awt.*;
 
 public class DepositPanel extends JPanel {
+    private static final long serialVersionUID = 1L;
     private final JTextField txtAmount;
-    private final ATMService atmService;
+    private final transient ATMService atmService;
 
     public DepositPanel(ATMService atmService, ATMFrame parentFrame) {
         this.atmService = atmService;
@@ -38,13 +39,20 @@ public class DepositPanel extends JPanel {
         gbc.gridx = 0; gbc.gridy = 2; gbc.gridwidth = 2;
         JButton btnDeposit = AppTheme.createRoundedButton("Confirm Deposit", UIConstants.SUCCESS_COLOR, Color.WHITE);
         btnDeposit.addActionListener(e -> depositMoney(parentFrame));
+        txtAmount.addActionListener(e -> btnDeposit.doClick());
         add(btnDeposit, gbc);
+    }
+
+    public void resetAndFocus() {
+        txtAmount.setText("");
+        txtAmount.requestFocusInWindow();
     }
 
     private void depositMoney(ATMFrame parentFrame) {
         double amount = InputValidator.parseAmount(txtAmount.getText());
         if (amount <= 0) {
-            DialogUtils.showError(this, "Please enter a valid amount greater than zero.");
+            DialogUtils.showError(this, "Please enter a valid positive amount (e.g. 500 or 500.50).");
+            txtAmount.requestFocusInWindow();
             return;
         }
 
@@ -55,6 +63,7 @@ public class DepositPanel extends JPanel {
             parentFrame.showPanel("Balance"); // Navigate to balance to show updated amount
         } catch (Exception ex) {
             DialogUtils.showError(this, ex.getMessage());
+            txtAmount.requestFocusInWindow();
         }
     }
 }

@@ -19,6 +19,11 @@ public class User {
     public String getName() { return name; }
     public String getCardNumber() { return cardNumber; }
     public String getPin() { return pin; }
-    public void setPin(String pin) { this.pin = pin; }
+    public void setPin(String pin) {
+        if (pin == null || !pin.trim().matches("^\\d{4}$")) {
+            throw new IllegalArgumentException("PIN must be exactly 4 digits.");
+        }
+        this.pin = pin.trim();
+    }
     public BankAccount getAccount() { return account; }
 }

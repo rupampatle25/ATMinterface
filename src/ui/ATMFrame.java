@@ -14,15 +14,20 @@ import java.util.Date;
  * Main dashboard application frame.
  */
 public class ATMFrame extends JFrame {
-    private final ATMService atmService;
+    private static final long serialVersionUID = 1L;
+    private final transient ATMService atmService;
     private JPanel cardPanel;
     private CardLayout cardLayout;
 
     // Panels
     private BalancePanel balancePanel;
     private StatementPanel statementPanel;
+    private DepositPanel depositPanel;
+    private WithdrawPanel withdrawPanel;
+    private ChangePinPanel changePinPanel;
 
     private JLabel statusTimeLabel;
+    private Timer clockTimer;
 
     public ATMFrame(ATMService atmService) {
         this.atmService = atmService;
@@ -39,6 +44,7 @@ public class ATMFrame extends JFrame {
         setLayout(new BorderLayout());
 
         addWindowListener(new java.awt.event.WindowAdapter() {
+            @Override
             public void windowClosing(java.awt.event.WindowEvent windowEvent) {
                 exitApplication();
             }
@@ -50,7 +56,8 @@ public class ATMFrame extends JFrame {
         JPanel headerPanel = new JPanel(new BorderLayout());
         headerPanel.setBackground(UIConstants.PRIMARY_COLOR);
         headerPanel.setBorder(BorderFactory.createEmptyBorder(15, 20, 15, 20));
-        JLabel welcomeLabel = new JLabel("Welcome, " + atmService.getCurrentUser().getName());
+        String userName = (atmService.getCurrentUser() != null) ? atmService.getCurrentUser().getName() : "Customer";
+        JLabel welcomeLabel = new JLabel("Welcome, " + userName);
         welcomeLabel.setFont(UIConstants.TITLE_FONT);
         welcomeLabel.setForeground(Color.WHITE);
         headerPanel.add(welcomeLabel, BorderLayout.WEST);
@@ -81,21 +88,27 @@ public class ATMFrame extends JFrame {
         cardPanel.setBackground(UIConstants.BG_COLOR);
 
         balancePanel = new BalancePanel(atmService);
+        depositPanel = new DepositPanel(atmService, this);
+        withdrawPanel = new WithdrawPanel(atmService, this);
         statementPanel = new StatementPanel(atmService);
+        changePinPanel = new ChangePinPanel(atmService);
 
         cardPanel.add(balancePanel, "Balance");
-        cardPanel.add(new DepositPanel(atmService, this), "Deposit");
-        cardPanel.add(new WithdrawPanel(atmService, this), "Withdraw");
+        cardPanel.add(depositPanel, "Deposit");
+        cardPanel.add(withdrawPanel, "Withdraw");
         cardPanel.add(statementPanel, "Statement");
-        cardPanel.add(new ChangePinPanel(atmService), "Pin");
+        cardPanel.add(changePinPanel, "Pin");
 
         add(cardPanel, BorderLayout.CENTER);
 
         // Status Bar
         JPanel statusBar = new JPanel(new BorderLayout());
-        statusBar.setBorder(BorderFactory.createEmptyBorder(5, 10, 5, 10));
+        statusBar.setBorder(BorderFactory.createEmptyBorder(6, 15, 6, 15));
+        JLabel statusConnLabel = new JLabel("Secure Connection Established");
+        statusConnLabel.setFont(new Font("Segoe UI", Font.PLAIN, 13));
         statusTimeLabel = new JLabel();
-        statusBar.add(new JLabel("Secure Connection Established"), BorderLayout.WEST);
+        statusTimeLabel.setFont(new Font("Segoe UI", Font.PLAIN, 13));
+        statusBar.add(statusConnLabel, BorderLayout.WEST);
         statusBar.add(statusTimeLabel, BorderLayout.EAST);
         add(statusBar, BorderLayout.SOUTH);
 
@@ -129,29 +142,42 @@ public class ATMFrame extends JFrame {
     public void showPanel(String name) {
         if (name.equals("Balance")) balancePanel.refresh();
         if (name.equals("Statement")) statementPanel.refresh();
+        if (name.equals("Deposit")) depositPanel.resetAndFocus();
+        if (name.equals("Withdraw")) withdrawPanel.resetAndFocus();
+        if (name.equals("Pin")) changePinPanel.resetAndFocus();
         cardLayout.show(cardPanel, name);
     }
 
     private void logout() {
+        if (clockTimer != null && clockTimer.isRunning()) {
+            clockTimer.stop();
+        }
         atmService.logout();
         dispose();
         new LoginFrame(atmService).setVisible(true);
     }
 
     private void exitApplication() {
-        if (DialogUtils.confirmExit(this)) System.exit(0);
+        if (DialogUtils.confirmExit(this)) {
+            if (clockTimer != null && clockTimer.isRunning()) {
+                clockTimer.stop();
+            }
+            System.exit(0);
+        }
     }
 
     private void startClock() {
-        new Timer(1000, e -> {
-            SimpleDateFormat sdf = new SimpleDateFormat("dd MMM yyyy | hh:mm:ss a");
-            statusTimeLabel.setText(sdf.format(new Date()));
-        }).start();
+        SimpleDateFormat sdf = new SimpleDateFormat("dd MMM yyyy | hh:mm:ss a");
+        statusTimeLabel.setText(sdf.format(new Date()));
+        clockTimer = new Timer(1000, e -> statusTimeLabel.setText(sdf.format(new Date())));
+        clockTimer.start();
     }
 
     private void setupKeyBindings() {
         getRootPane().getInputMap(JComponent.WHEN_IN_FOCUSED_WINDOW).put(KeyStroke.getKeyStroke(KeyEvent.VK_ESCAPE, 0), "ESC_EXIT");
         getRootPane().getActionMap().put("ESC_EXIT", new AbstractAction() {
+            private static final long serialVersionUID = 1L;
+            @Override
             public void actionPerformed(java.awt.event.ActionEvent e) { exitApplication(); }
         });
     }

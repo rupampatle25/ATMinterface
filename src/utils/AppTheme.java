@@ -65,6 +65,7 @@ public class AppTheme {
     }
 
     public static class RoundedBorder extends AbstractBorder {
+        private static final long serialVersionUID = 1L;
         private final Color color;
         private final int radius;
 

@@ -13,10 +13,11 @@ import java.awt.event.KeyEvent;
  * Frame for user authentication.
  */
 public class LoginFrame extends JFrame {
+    private static final long serialVersionUID = 1L;
     private JTextField txtCard;
     private JPasswordField txtPin;
     private JButton btnLogin;
-    private final ATMService atmService;
+    private final transient ATMService atmService;
 
     public LoginFrame(ATMService atmService) {
         this.atmService = atmService;
@@ -28,7 +29,15 @@ public class LoginFrame extends JFrame {
         setTitle(UIConstants.APP_TITLE + " - Login");
         setSize(800, 500);
         setLocationRelativeTo(null);
-        setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        setDefaultCloseOperation(JFrame.DO_NOTHING_ON_CLOSE);
+        addWindowListener(new java.awt.event.WindowAdapter() {
+            @Override
+            public void windowClosing(java.awt.event.WindowEvent e) {
+                if (DialogUtils.confirmExit(LoginFrame.this)) {
+                    System.exit(0);
+                }
+            }
+        });
         setLayout(new BorderLayout());
         getContentPane().setBackground(UIConstants.BG_COLOR);
 
@@ -75,7 +84,11 @@ public class LoginFrame extends JFrame {
         JButton btnExit = AppTheme.createRoundedButton("Exit", UIConstants.DANGER_COLOR, Color.WHITE);
 
         btnLogin.addActionListener(e -> login());
-        btnReset.addActionListener(e -> { txtCard.setText(""); txtPin.setText(""); });
+        btnReset.addActionListener(e -> {
+            txtCard.setText("");
+            txtPin.setText("");
+            txtCard.requestFocusInWindow();
+        });
         btnExit.addActionListener(e -> { if(DialogUtils.confirmExit(this)) System.exit(0); });
 
         buttonPanel.add(btnLogin);
@@ -91,10 +104,12 @@ public class LoginFrame extends JFrame {
 
         if (!InputValidator.isValidCardNumber(card)) {
             DialogUtils.showError(this, "Card number must be exactly 12 digits.");
+            txtCard.requestFocusInWindow();
             return;
         }
         if (!InputValidator.isValidPin(pin)) {
             DialogUtils.showError(this, "PIN must be exactly 4 digits.");
+            txtPin.requestFocusInWindow();
             return;
         }
 
@@ -103,6 +118,8 @@ public class LoginFrame extends JFrame {
             new ATMFrame(atmService).setVisible(true);
         } else {
             DialogUtils.showError(this, "Invalid Card Number or PIN!");
+            txtPin.setText("");
+            txtPin.requestFocusInWindow();
         }
     }
 

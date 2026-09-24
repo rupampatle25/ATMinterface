@@ -9,8 +9,9 @@ import javax.swing.*;
 import java.awt.*;
 
 public class WithdrawPanel extends JPanel {
+    private static final long serialVersionUID = 1L;
     private final JTextField txtAmount;
-    private final ATMService atmService;
+    private final transient ATMService atmService;
 
     public WithdrawPanel(ATMService atmService, ATMFrame parentFrame) {
         this.atmService = atmService;
@@ -38,13 +39,20 @@ public class WithdrawPanel extends JPanel {
         gbc.gridx = 0; gbc.gridy = 2; gbc.gridwidth = 2;
         JButton btnWithdraw = AppTheme.createRoundedButton("Confirm Withdrawal", UIConstants.SUCCESS_COLOR, Color.WHITE);
         btnWithdraw.addActionListener(e -> withdrawMoney(parentFrame));
+        txtAmount.addActionListener(e -> btnWithdraw.doClick());
         add(btnWithdraw, gbc);
+    }
+
+    public void resetAndFocus() {
+        txtAmount.setText("");
+        txtAmount.requestFocusInWindow();
     }
 
     private void withdrawMoney(ATMFrame parentFrame) {
         double amount = InputValidator.parseAmount(txtAmount.getText());
         if (amount <= 0) {
-            DialogUtils.showError(this, "Please enter a valid positive amount.");
+            DialogUtils.showError(this, "Please enter a valid positive amount (e.g. 500 or 500.50).");
+            txtAmount.requestFocusInWindow();
             return;
         }
 
@@ -53,8 +61,9 @@ public class WithdrawPanel extends JPanel {
             DialogUtils.showSuccess(this, "Please collect your cash: " + utils.CurrencyFormatter.format(amount));
             txtAmount.setText("");
             parentFrame.showPanel("Balance");
-        } catch (IllegalArgumentException ex) {
+        } catch (Exception ex) {
             DialogUtils.showError(this, ex.getMessage());
+            txtAmount.requestFocusInWindow();
         }
     }
 }

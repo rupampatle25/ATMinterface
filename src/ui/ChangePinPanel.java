@@ -9,10 +9,11 @@ import javax.swing.*;
 import java.awt.*;
 
 public class ChangePinPanel extends JPanel {
+    private static final long serialVersionUID = 1L;
     private final JPasswordField txtOldPin;
     private final JPasswordField txtNewPin;
     private final JPasswordField txtConfirmPin;
-    private final ATMService atmService;
+    private final transient ATMService atmService;
 
     public ChangePinPanel(ATMService atmService) {
         this.atmService = atmService;
@@ -42,7 +43,15 @@ public class ChangePinPanel extends JPanel {
         gbc.gridx = 0; gbc.gridy = 4; gbc.gridwidth = 2;
         JButton btnChange = AppTheme.createRoundedButton("Update PIN", UIConstants.SUCCESS_COLOR, Color.WHITE);
         btnChange.addActionListener(e -> changePin());
+        txtConfirmPin.addActionListener(e -> btnChange.doClick());
         add(btnChange, gbc);
+    }
+
+    public void resetAndFocus() {
+        txtOldPin.setText("");
+        txtNewPin.setText("");
+        txtConfirmPin.setText("");
+        txtOldPin.requestFocusInWindow();
     }
 
     private JLabel createLabel(String text) {
@@ -52,25 +61,33 @@ public class ChangePinPanel extends JPanel {
     }
 
     private void changePin() {
-        String oldP = new String(txtOldPin.getPassword());
-        String newP = new String(txtNewPin.getPassword());
-        String confP = new String(txtConfirmPin.getPassword());
+        String oldP = new String(txtOldPin.getPassword()).trim();
+        String newP = new String(txtNewPin.getPassword()).trim();
+        String confP = new String(txtConfirmPin.getPassword()).trim();
 
+        if (oldP.isEmpty()) {
+            DialogUtils.showError(this, "Please enter your current PIN.");
+            txtOldPin.requestFocusInWindow();
+            return;
+        }
         if (!InputValidator.isValidPin(newP)) {
             DialogUtils.showError(this, "New PIN must be exactly 4 digits.");
+            txtNewPin.requestFocusInWindow();
             return;
         }
         if (!newP.equals(confP)) {
             DialogUtils.showError(this, "New PIN and Confirm PIN do not match.");
+            txtConfirmPin.requestFocusInWindow();
             return;
         }
 
         try {
             atmService.changePin(oldP, newP);
             DialogUtils.showSuccess(this, "PIN successfully changed!");
-            txtOldPin.setText(""); txtNewPin.setText(""); txtConfirmPin.setText("");
-        } catch (IllegalArgumentException ex) {
+            resetAndFocus();
+        } catch (Exception ex) {
             DialogUtils.showError(this, ex.getMessage());
+            txtOldPin.requestFocusInWindow();
         }
     }
 }

@@ -10,8 +10,9 @@ import java.awt.*;
  * Panel to display user's current bank balance.
  */
 public class BalancePanel extends JPanel {
+    private static final long serialVersionUID = 1L;
     private final JLabel lblBalance;
-    private final ATMService atmService;
+    private final transient ATMService atmService;
 
     public BalancePanel(ATMService atmService) {
         this.atmService = atmService;
@@ -32,7 +33,11 @@ public class BalancePanel extends JPanel {
     }
 
     public void refresh() {
-        double balance = atmService.getCurrentUser().getAccount().getBalance();
-        lblBalance.setText(CurrencyFormatter.format(balance));
+        if (atmService.getCurrentUser() != null && atmService.getCurrentUser().getAccount() != null) {
+            double balance = atmService.getCurrentUser().getAccount().getBalance();
+            lblBalance.setText(CurrencyFormatter.format(balance));
+        } else {
+            lblBalance.setText(CurrencyFormatter.format(0.0));
+        }
     }
 }

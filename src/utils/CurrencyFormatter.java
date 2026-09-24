@@ -7,8 +7,13 @@ import java.util.Locale;
  * Utility for formatting currency.
  */
 public class CurrencyFormatter {
+    private static final Locale INDIA_LOCALE = Locale.forLanguageTag("en-IN");
+
     public static String format(double amount) {
-        NumberFormat format = NumberFormat.getCurrencyInstance(new Locale("en", "IN"));
+        if (!Double.isFinite(amount)) {
+            return "₹0.00";
+        }
+        NumberFormat format = NumberFormat.getCurrencyInstance(INDIA_LOCALE);
         return format.format(amount);
     }
 }
